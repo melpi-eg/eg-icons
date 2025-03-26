@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: "https://eg-icons-backend-aaad382084ea.herokuapp.com/icons/download?filetype=svg",
+  baseURL: "https://eg-icons-backend-aaad382084ea.herokuapp.com",
 });
 
 /**
