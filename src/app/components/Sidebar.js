@@ -74,7 +74,7 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
             text: "Dashboard",
             icon: <DashboardIcon />,
             path: "/home/manage",
-            show: true,
+            show: isAdmin,
           },
           {
             text: "Manage Icons",

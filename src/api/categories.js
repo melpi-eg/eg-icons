@@ -29,3 +29,14 @@ export const getCategories = async () => {
 export const deleteCategories = async (category_ids) => {
   return await api.delete("/category", { id_list: category_ids }, {}, true);
 };
+
+/**
+ * Updates the category with the given ID
+ * @param {string} category_id the ID of the category to update
+ * @param {string} category_name the new name for the category
+ * @returns {Promise<Response>} the response from the API
+ */
+
+export const updateCategory = async (category_id, category_name) => {
+  return await api.put(`/category/${category_id}`, { category_name }, {}, true);
+};

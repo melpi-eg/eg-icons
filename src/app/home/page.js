@@ -19,6 +19,7 @@ import Skeleton from "@mui/material/Skeleton";
 import Pagination from "@mui/material/Pagination";
 import IconModal from "../components/IconModal";
 import { getIcons } from "@/api/icons";
+import { downloadIcon } from "@/api/downloads";
 
 // Add this constant at the top of the file
 const HEADER_HEIGHT = 64; // Assuming header height is 64px
@@ -30,7 +31,7 @@ export default function Home() {
   const [hoveredIcon, setHoveredIcon] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const iconsPerPage = 10;
+  const iconsPerPage = 20;
 
   const [icons, setIcons] = useState([]);
 
@@ -38,13 +39,15 @@ export default function Home() {
   useEffect(() => {
     getIcons(currentPage, iconsPerPage).then((response) => {
       setIcons(
-        response.data.icons.map((icon) => ({
-          id: icon.id,
-          className: "fa-shield-cross",
-          tags: icon.icon_tags.map((tag) => tag.tag_name),
-          name: icon.icon_name,
-          svg: icon.icon_content,
-        }))
+        response.data.icons
+          .filter((icon) => icon.status === "PUBLISHED")
+          .map((icon) => ({
+            id: icon.id,
+            className: "fa-shield-cross",
+            tags: icon.icon_tags.map((tag) => tag.tag_name),
+            name: icon.icon_name,
+            svg: icon.icon_content,
+          }))
       );
       setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
     });
@@ -58,6 +61,7 @@ export default function Home() {
         tag.toLowerCase().includes(searchQuery.toLowerCase())
       )
   );
+  console.log(filteredIcons);
 
   // Add empty state for search
   const noResults = searchQuery && filteredIcons.length === 0;
@@ -102,7 +106,7 @@ export default function Home() {
 
   // Add this effect after the other state declarations
   useEffect(() => {
-    setCurrentPage(1);
+    // setCurrentPage(1);
   }, [searchQuery]);
 
   // Add SVG loading functionality
@@ -259,7 +263,7 @@ export default function Home() {
                   <IconSkeleton key={index} />
                 ))
               : // Show actual icons
-                currentIcons.map((icon, index) => (
+                filteredIcons.map((icon, index) => (
                   <Grid item xs={6} sm={4} md={3} lg={2} key={icon.id}>
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -365,6 +369,9 @@ export default function Home() {
                         {/* Quick action buttons */}
                         {hoveredIcon === icon.id && (
                           <Box
+                          onClick={(event)=>{
+                            event.stopPropagation();
+                          }}
                             sx={{
                               position: "absolute",
                               bottom: 0,
@@ -387,6 +394,11 @@ export default function Home() {
                                   bgcolor: "#f8faff",
                                 },
                               }}
+                              onClick={() => {
+                                navigator.clipboard
+                                  .writeText(icon.svg)
+                                  .then(() => {});
+                              }}
                             >
                               <ContentCopyIcon
                                 fontSize="small"
@@ -401,6 +413,14 @@ export default function Home() {
                                 "&:hover": {
                                   bgcolor: "#f8faff",
                                 },
+                              }}
+                              onClick={() => {
+                                downloadIcon(
+                                  icon.svg,
+                                  "svg",
+                                  icon.name,
+                                  icon.id
+                                );
                               }}
                             >
                               <DownloadIcon
@@ -471,6 +491,7 @@ export default function Home() {
         <IconModal
           selectedIcon={selectedIcon}
           onClose={() => setSelectedIcon(null)}
+          setIcons={setIcons}
         />
       )}
     </Box>

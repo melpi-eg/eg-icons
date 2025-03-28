@@ -21,9 +21,10 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import PublishIcon from "@mui/icons-material/Publish";
 import ScheduleIcon from "@mui/icons-material/Schedule";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { publishIcons } from "@/api/icons";
+import { publishIcons, scheduleIcons } from "@/api/icons";
+import { all } from "axios";
 
 export default function PublishModal({ open, onClose, icons, iconMetadata }) {
   const router = useRouter();
@@ -36,8 +37,28 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
   const [publishing, setPublishing] = useState({});
   const [publishStatus, setPublishStatus] = useState({});
   const [alert, setAlert] = useState(null);
+  const [allPublished, setAllPublished] = useState(false);
 
   console.log("Publishable", icons);
+
+  useEffect(() => {
+    if (!allPublished && Object.keys(publishStatus).length === icons.length) {
+      let allPublishedFlag = true;
+
+      icons.forEach((icon) => {
+        if (
+          publishStatus[icon.id] != "published" &&
+          publishStatus[icon.id] != "scheduled"
+        ) {
+          allPublishedFlag = false;
+        }
+      });
+
+      console.log("All Published", allPublishedFlag);
+
+      setAllPublished(allPublishedFlag);
+    }
+  }, [publishStatus]);
 
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
@@ -59,51 +80,164 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
   };
 
   const handlePublish = async (iconId) => {
-    setPublishing((prev) => ({ ...prev, [iconId]: true }));
-    // Simulate publish API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setPublishing((prev) => ({ ...prev, [iconId]: false }));
-    setPublishStatus((prev) => ({
-      ...prev,
-      [iconId]: scheduleMode ? "scheduled" : "published",
-    }));
+    if (!scheduleMode) {
+      const icon = icons.find((i) => i.id === iconId);
+      setPublishing((prev) => ({ ...prev, [iconId]: true }));
+      // Publish API call :
 
-    // Show alert message
-    const icon = icons.find((i) => i.id === iconId);
-    setAlert({
-      severity: "success",
-      message: `${icon.name} has been ${
-        scheduleMode ? "scheduled" : "published"
-      } successfully`,
-    });
+      publishIcons([iconId], "PUBLISHED").then((response) => {
+        if (!response.error) {
+          setPublishing((prev) => ({ ...prev, [iconId]: false }));
+          setPublishStatus((prev) => ({
+            ...prev,
+            [iconId]: scheduleMode ? "scheduled" : "published",
+          }));
+
+          setAlert({
+            severity: "success",
+            message: `${icon.name} has been ${
+              scheduleMode ? "scheduled" : "published"
+            } successfully`,
+          });
+        } else {
+          setAlert({
+            severity: "error",
+            message: `Error publishing ${icon.name}`,
+          });
+        }
+      });
+    } else {
+      const icon = icons.find((i) => i.id === iconId);
+      setPublishing((prev) => ({ ...prev, [iconId]: true }));
+
+      // schedule API call :
+      scheduleIcons([iconId], scheduledDate).then((response) => {
+        if (!response.error) {
+          setPublishing((prev) => ({ ...prev, [iconId]: false }));
+          setPublishStatus((prev) => ({
+            ...prev,
+            [iconId]: scheduleMode ? "scheduled" : "published",
+          }));
+
+          setAlert({
+            severity: "success",
+            message: `${icon.name} has been ${
+              scheduleMode ? "scheduled" : "published"
+            } successfully`,
+          });
+        } else {
+          setAlert({
+            severity: "error",
+            message: `Error publishing ${icon.name}`,
+          });
+        }
+      });
+    }
+
+    // await new Promise((resolve) => setTimeout(resolve, 1500));
+    // setPublishing((prev) => ({ ...prev, [iconId]: false }));
+    // setPublishStatus((prev) => ({
+    //   ...prev,
+    //   [iconId]: scheduleMode ? "scheduled" : "published",
+    // }));
+
+    // // Show alert message
+    // const icon = icons.find((i) => i.id === iconId);
+    // setAlert({
+    //   severity: "success",
+    //   message: `${icon.name} has been ${
+    //     scheduleMode ? "scheduled" : "published"
+    //   } successfully`,
+    // });
   };
 
   const handleBulkPublish = async () => {
     const action = scheduleMode ? "scheduled" : "published";
-    setAlert({
-      severity: "info",
-      message: `Publishing ${selectedIcons.length} icons...`,
-    });
 
-    for (const iconId of selectedIcons) {
-      await handlePublish(iconId);
+    if (action === "published") {
+      setAlert({
+        severity: "info",
+        message: `Publishing ${selectedIcons.length} icons...`,
+      });
+
+      // Update publish status to publishing to all the selected unpublished icons :
+      setPublishing((prev) => {
+        const newState = { ...prev };
+        selectedIcons.forEach((iconId) => {
+          if (!newState[iconId]) newState[iconId] = false;
+        });
+        return newState;
+      });
+
+      publishIcons(selectedIcons, "PUBLISHED").then((response) => {
+        if (!response.error) {
+          setAlert({
+            severity: "success",
+            message: `Published ${selectedIcons.length} icons successfully`,
+          });
+
+          setPublishStatus((prev) => {
+            const newState = { ...prev };
+            selectedIcons.forEach((iconId) => {
+              newState[iconId] = scheduleMode ? "scheduled" : "published";
+            });
+            return newState;
+          });
+
+          setSelectedIcons([]);
+          setSelectAll(false);
+        } else {
+          setAlert({
+            severity: "error",
+            message: `Error publishing ${selectedIcons.length} icons`,
+          });
+        }
+      });
+    } else {
+      setAlert({
+        severity: "info",
+        message: `Scheduling ${selectedIcons.length} icons...`,
+      });
+
+      // Update publish status to publishing to all the selected unpublished icons :
+      setPublishing((prev) => {
+        const newState = { ...prev };
+        selectedIcons.forEach((iconId) => {
+          if (!newState[iconId]) newState[iconId] = false;
+        });
+        return newState;
+      });
+
+      scheduleIcons(selectedIcons, scheduledDate).then((response) => {
+        if (!response.error) {
+          setAlert({
+            severity: "success",
+            message: `Scheduled ${selectedIcons.length} icons successfully`,
+          });
+
+          setPublishStatus((prev) => {
+            const newState = { ...prev };
+            selectedIcons.forEach((iconId) => {
+              newState[iconId] = scheduleMode ? "scheduled" : "published";
+            });
+            return newState;
+          });
+
+          setSelectedIcons([]);
+          setSelectAll(false);
+        } else {
+          setAlert({
+            severity: "error",
+            message: `Error publishing ${selectedIcons.length} icons`,
+          });
+        }
+      });
     }
-
-    setAlert({
-      severity: "success",
-      message: `${selectedIcons.length} icons have been ${action} successfully`,
-    });
-
-    console.log("Published", selectedIcons);
-
-    publishIcons(selectedIcons, "PUBLISHED").then((response) => {
-      console.log(response);
-    });
   };
 
   const handleClose = () => {
     onClose();
-    router.push("/manage");
+    router.push("/home/manage");
   };
 
   return (
@@ -171,7 +305,7 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
             )}
           </Stack>
 
-          {selectedIcons.length > 0 && (
+          {selectedIcons.length > 0 && allPublished && (
             <Button
               variant="contained"
               startIcon={scheduleMode ? <ScheduleIcon /> : <PublishIcon />}

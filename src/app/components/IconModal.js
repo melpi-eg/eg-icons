@@ -24,6 +24,7 @@ import { useTheme } from "@mui/material/styles";
 import { downloadIcon } from "@/api/downloads";
 import { useSelector } from "react-redux";
 import { deleteIcons, publishIcons } from "@/api/icons";
+import { set } from "date-fns";
 
 const modalStyle = {
   position: "absolute",
@@ -72,7 +73,12 @@ const sizeMarks = [
   { value: 512, label: "512" },
 ];
 
-export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
+export default function IconModal({
+  selectedIcon,
+  onClose,
+  isAdmin = true,
+  setIcons,
+}) {
   const theme = useTheme();
   const [iconColor, setIconColor] = useState("#000000");
   const [showCustomColor, setShowCustomColor] = useState(false);
@@ -87,6 +93,7 @@ export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
     severity: "success",
   });
   const [svgString, setSvgString] = useState(selectedIcon.svg);
+  const [published, setPublished] = useState(true);
   const user = useSelector((state) => state.auth.user);
   isAdmin = user.role === "SUPERADMIN" || user.role === "ADMIN";
 
@@ -200,6 +207,9 @@ export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
           message: "Icon deleted successfully",
           severity: "success",
         });
+        setIcons((icons) => {
+          return icons.filter((icon) => icon.id !== selectedIcon.id);
+        });
         onClose();
       }
     });
@@ -208,20 +218,30 @@ export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
   const handleUnpublish = async () => {
     publishIcons(
       [selectedIcon.id],
-      selectedIcon.status == "PUBLISHED" ? "UNPUBLISHED" : "PUBLISHED"
+      published ? "UNPUBLISHED" : "PUBLISHED"
     ).then((response) => {
       if (response.error) {
         setSnackbar({
           open: true,
-          message: "Error unpublishing icon",
+          message: `Icon ${
+            published ? "unpublished" : "published"
+          } successfully`,
           severity: "error",
         });
       } else {
         setSnackbar({
           open: true,
-          message: "Icon unpublished successfully",
+          message: `Icon ${
+            published ? "unpublished" : "published"
+          } successfully`,
           severity: "success",
         });
+
+        setIcons((icons) => {
+          return icons.map((icon) => ({ ...icon, published: !published }));
+        });
+
+        setPublished(!published);
       }
     });
   };
@@ -534,7 +554,7 @@ export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
               >
                 Size
               </Typography>
-              <Box sx={{ px: 2, mb: 4, mt: 3 }}>
+              <Box sx={{ mb: 4, mt: 3 }}>
                 <Slider
                   value={iconSize}
                   onChange={handleSizeChange}
@@ -552,6 +572,15 @@ export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
                       transform: "translateX(-50%) translateY(20px)",
                       '&[data-index="0"]': {
                         transform: "translateX(0%) translateY(20px)",
+                      },
+                      '&[data-index="1"]': {
+                        transform: "translateX(-25%) translateY(20px)",
+                      },
+                      '&[data-index="2"]': {
+                        transform: "translateX(-50%) translateY(20px)",
+                      },
+                      '&[data-index="3"]': {
+                        transform: "translateX(-75%) translateY(20px)",
                       },
                       '&[data-index="4"]': {
                         transform: "translateX(-100%) translateY(20px)",
@@ -778,7 +807,7 @@ export default function IconModal({ selectedIcon, onClose, isAdmin = true }) {
                       }}
                       onClick={handleUnpublish}
                     >
-                      Unpublish Icon
+                      {published ? "Unpublish" : "Publish"} Icon
                     </Button>
                     <Button
                       variant="outlined"

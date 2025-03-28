@@ -33,3 +33,13 @@ export const getIconTypes = async () => {
 export const deleteIconTypes = async (icon_ids) => {
   return await api.delete("/type", { id_list: icon_ids }, {}, true);
 };
+
+/**
+ * Updates the icon type with the given ID
+ * @param {number} icon_id the ID of the icon type to update
+ * @param {string} icon_type the new name of the icon type
+ * @returns {Promise<Response>} the response from the API
+ */
+export const updateIconType = async (icon_id, icon_type) => {
+  return await api.put(`/type/${icon_id}`, { type_name: icon_type }, {}, true);
+}

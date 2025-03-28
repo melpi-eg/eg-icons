@@ -55,8 +55,8 @@ export const uploadIcons = async (data_list) => {
  * @param {number} limit the number of icons to get
  * @returns {Promise<Response>} the response from the API
  */
-export const getIcons = async (page_no, limit) => {
-  return await api.get(`/icons/${page_no}?limit=${limit}`, {}, {}, true);
+export const getIcons = async (page_no, limit, icon_status = "PUBLISHED") => {
+  return await api.get(`/icons/${page_no}?limit=${limit}&icon_status=${icon_status}`, {}, {}, true);
 };
 
 /**
@@ -124,6 +124,22 @@ export const publishIcons = async (icon_ids, status) => {
   return await api.post(
     "/icons/publish",
     { id_list: icon_ids, status: status },
+    {},
+    true
+  );
+};
+
+/**
+ * Schedules the icons with the given IDs to be published at the specified date and time
+ * @param {string[]} icon_ids the IDs of the icons to schedule
+ * @param {string} schedule_time the date and time to schedule the icons, in the format "YYYY-MM-DD HH:mm:ss"
+ * @returns {Promise<Response>} the response from the API
+ */
+
+export const scheduleIcons = async (icon_ids, schedule_time) => {
+  return await api.post(
+    "/icons/schedule",
+    { id_list: icon_ids, schedule_time },
     {},
     true
   );

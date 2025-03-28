@@ -29,6 +29,7 @@ import {
   MenuItem,
   Alert,
   Snackbar,
+  Autocomplete,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -46,12 +47,24 @@ import UnpublishedIcon from "@mui/icons-material/Unpublished";
 import Modal from "@mui/material/Modal";
 import Image from "next/image";
 import IconPreviewModal from "@/app/components/IconPreviewModal";
-import { addIconType, deleteIconTypes, getIconTypes } from "@/api/types";
-import { addCategory, deleteCategories, getCategories } from "@/api/categories";
+import {
+  addIconType,
+  deleteIconTypes,
+  getIconTypes,
+  updateIconType,
+} from "@/api/types";
+import {
+  addCategory,
+  deleteCategories,
+  getCategories,
+  updateCategory,
+} from "@/api/categories";
 import { deleteIcons, getIcons, publishIcons, updateIcon } from "@/api/icons";
 import { createSvgUrlFromCode } from "@/utils";
 import FullScreenUnauthorized from "@/app/components/Unauthorized";
+import Select from "@mui/material/Select";
 import useRole from "@/hooks/useRole";
+import { set } from "date-fns";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -99,6 +112,12 @@ export default function ManagePage() {
   const [newIconType, setNewIconType] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [totalIcons, setTotalIcons] = useState(0);
+  const [editCategoryType, setEditCategoryType] = useState({
+    open: false,
+    type: null,
+    value: "",
+    id: null,
+  });
   const { isAdmin } = useRole();
 
   // fetch the icon types and categories from the API :
@@ -150,6 +169,7 @@ export default function ManagePage() {
             iconUrl: createSvgUrlFromCode(each.icon_content),
             downloads: each.downloads,
             icon_svg: each.icon_content,
+            categories: each.icon_category,
           }))
         );
 
@@ -247,7 +267,9 @@ export default function ManagePage() {
   };
 
   const handleEditIcon = (icon) => {
-    setEditedCategory(icon.category);
+    setEditedCategory(
+      icon.categories.map((cat) => ({ ...cat, name: cat.category_name }))
+    );
     setEditedTags(icon.tags.join(", "));
     setEditDialog({ open: true, icon });
   };
@@ -259,7 +281,7 @@ export default function ManagePage() {
     // Update the icon in the database :
     updateIcon(icon.id, {
       icon_name: icon.name,
-      category: categories.find((cat) => cat.name === editedCategory).id,
+      category: editedCategory.map((cat) => cat.id),
       type: iconTypes.find((type) => type.name === icon.type).id,
       tags: editedTags,
       replace_file: false,
@@ -277,6 +299,26 @@ export default function ManagePage() {
           message: "Icon updated successfully",
           severity: "success",
         });
+
+        // Update the icon in the state :
+        setIcons(
+          icons.map((i) =>
+            i.id === icon.id
+              ? {
+                  ...i,
+                  name: icon.name,
+                  category: editedCategory.map((cat) => cat.name).join(","),
+                  type: icon.type,
+                  tags: editedTags.split(",").map((tag) => tag.trim()),
+                  categories: editedCategory.map((cat) => ({
+                    ...cat,
+                    name: cat.category_name,
+                    category_name: cat.name,
+                  })), // Update categories with the new values
+                }
+              : i
+          )
+        );
       }
     });
 
@@ -497,7 +539,8 @@ export default function ManagePage() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      filters.category === "all" || icon.category === filters.category;
+      filters.category === "all" ||
+      icon.category.split(",").includes(filters.category);
     const matchesType = filters.type === "all" || icon.type === filters.type;
     const matchesPublished =
       filters.published === "all" ||
@@ -518,6 +561,66 @@ export default function ManagePage() {
       ? a[orderBy].localeCompare(b[orderBy])
       : b[orderBy].localeCompare(a[orderBy]);
   });
+
+  const handleSaveTypeCategoryEdit = async () => {
+    if (editCategoryType.value.trim() === "") {
+      setSnackbar({
+        open: true,
+        message: "Please enter a valid name",
+        severity: "error",
+      });
+      return;
+    }
+
+    let response = null;
+    if (editCategoryType.type === "category") {
+      response = await updateCategory(
+        editCategoryType.id,
+        editCategoryType.value
+      );
+    } else {
+      response = await updateIconType(
+        editCategoryType.id,
+        editCategoryType.value
+      );
+    }
+
+    if (response.error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to update the ${editCategoryType.type}`,
+        severity: "error",
+      });
+
+      setEditCategoryType({ open: false, type: null, value: "", id: null });
+    } else {
+      setSnackbar({
+        open: true,
+        message: `${editCategoryType.type} updated successfully`,
+        severity: "success",
+      });
+
+      // update the state :
+      if (editCategoryType.type === "category") {
+        setCategories(
+          categories.map((cat) =>
+            cat.id === editCategoryType.id
+              ? { ...cat, name: editCategoryType.value }
+              : cat
+          )
+        );
+      } else {
+        setIconTypes(
+          iconTypes.map((iconType) =>
+            iconType.id === editCategoryType.id
+              ? { ...iconType, name: editCategoryType.value }
+              : iconType
+          )
+        );
+      }
+      setEditCategoryType({ open: false, type: null, value: "", id: null });
+    }
+  };
 
   if (!isAdmin) return <FullScreenUnauthorized />;
 
@@ -835,12 +938,28 @@ export default function ManagePage() {
                     <TableCell>{category.name}</TableCell>
                     <TableCell>{category.count}</TableCell>
                     <TableCell>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleDeleteClick(category, "category")}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      <Box sx={{ display: "flex", gap: "20px" }}>
+                        <IconButton
+                          edge="end"
+                          onClick={() =>
+                            handleDeleteClick(category, "category")
+                          }
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => {
+                            setEditCategoryType({
+                              open: true,
+                              type: "category",
+                              value: category.name,
+                              id: category.id,
+                            });
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -874,12 +993,26 @@ export default function ManagePage() {
                     <TableCell>{type.name}</TableCell>
                     <TableCell>{type.count}</TableCell>
                     <TableCell>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleDeleteClick(type, "iconType")}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      <Box sx={{ display: "flex", gap: "20px" }}>
+                        <IconButton
+                          edge="end"
+                          onClick={() => handleDeleteClick(type, "iconType")}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => {
+                            setEditCategoryType({
+                              open: true,
+                              type: "iconType",
+                              value: type.name,
+                              id: type.id,
+                            });
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -891,7 +1024,11 @@ export default function ManagePage() {
 
       <Dialog
         open={newItemDialog.open}
-        onClose={() => setNewItemDialog({ open: false, type: null })}
+        onClose={() => {
+          setNewItemDialog({ open: false, type: null });
+          setNewCategory("");
+          setNewIconType("");
+        }}
       >
         <DialogTitle>
           Add New {newItemDialog.type === "category" ? "Category" : "Icon Type"}
@@ -930,7 +1067,7 @@ export default function ManagePage() {
       >
         <DialogTitle>Edit Icon</DialogTitle>
         <DialogContent>
-          <TextField
+          {/* <TextField
             select
             margin="dense"
             label="Category"
@@ -943,7 +1080,28 @@ export default function ManagePage() {
                 {category.name}
               </MenuItem>
             ))}
-          </TextField>
+          </TextField> */}
+          <Autocomplete
+            sx={{ mb: 2 }}
+            multiple
+            id="tags-outlined"
+            options={categories}
+            getOptionLabel={(option) => option.name}
+            defaultValue={editDialog.icon?.categories?.map((cat) => ({
+              ...cat,
+              name: cat.category_name,
+            }))}
+            filterSelectedOptions
+            renderInput={(params) => (
+              <TextField {...params} label="" placeholder="Categories" />
+            )}
+            onChange={(event, value) => {
+              console.log(value);
+
+              setEditedCategory(value);
+            }}
+          />
+
           <TextField
             margin="dense"
             label="Tags (comma-separated)"
@@ -988,6 +1146,39 @@ export default function ManagePage() {
             color="error"
           >
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={editCategoryType.open}
+        onClose={() => {
+          setEditCategoryType({ open: false, type: null, value: "", id: null });
+        }}
+      >
+        <DialogTitle>Edit {editCategoryType.type}</DialogTitle>
+        <DialogContent>
+          <TextField
+            value={editCategoryType.value}
+            onInput={(e) => {
+              setEditCategoryType({
+                ...editCategoryType,
+                value: e.target.value,
+              });
+              console.log(e.target.value);
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setEditCategoryType({ open: false, type: null, value: "" });
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleSaveTypeCategoryEdit} variant="contained">
+            Save
           </Button>
         </DialogActions>
       </Dialog>
