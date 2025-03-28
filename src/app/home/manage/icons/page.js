@@ -152,7 +152,7 @@ export default function ManagePage() {
 
   // fetching the paginated icons data from the API :
   useEffect(() => {
-    getIcons(page + 1, rowsPerPage).then((response) => {
+    getIcons(page + 1, rowsPerPage, "ALL").then((response) => {
       if (!response.error) {
         console.log("sss", response.data);
         setIcons(

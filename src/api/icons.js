@@ -56,7 +56,12 @@ export const uploadIcons = async (data_list) => {
  * @returns {Promise<Response>} the response from the API
  */
 export const getIcons = async (page_no, limit, icon_status = "PUBLISHED") => {
-  return await api.get(`/icons/${page_no}?limit=${limit}&icon_status=${icon_status}`, {}, {}, true);
+  return await api.get(
+    `/icons/${page_no}?limit=${limit}&icon_status=${icon_status}`,
+    {},
+    {},
+    true
+  );
 };
 
 /**
@@ -140,6 +145,22 @@ export const scheduleIcons = async (icon_ids, schedule_time) => {
   return await api.post(
     "/icons/schedule",
     { id_list: icon_ids, schedule_time },
+    {},
+    true
+  );
+};
+
+/**
+ * Filters the icons based on the given categories
+ * @param {number} page_no the page number to get the icons from
+ * @param {number} limit the number of icons to get
+ * @param {number[]} categories the array of categories ids to filter by
+ * @returns {Promise<Response>} the response from the API
+ *  */
+export const filterIconsByCategories = async (page_no, limit, categories) => {
+  return await api.post(
+    `/icons/filter/${page_no}?limit=${limit}`,
+    { categories },
     {},
     true
   );

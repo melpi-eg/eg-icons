@@ -124,13 +124,16 @@ export default function DashboardPage() {
               Download Trends
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={downloadTrends}>
+              <LineChart
+                data={downloadTrends}
+              
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
+
+                <XAxis dataKey="date" dy={10} />
                 <YAxis />
                 <Tooltip />
                 <Line type="monotone" dataKey="downloads" stroke="#8884d8" />
-                {/* <Line type="monotone" dataKey="date" stroke="#8884d8" /> */}
               </LineChart>
             </ResponsiveContainer>
           </Paper>

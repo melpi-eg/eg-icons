@@ -18,8 +18,10 @@ import { motion } from "framer-motion";
 import Skeleton from "@mui/material/Skeleton";
 import Pagination from "@mui/material/Pagination";
 import IconModal from "../components/IconModal";
-import { getIcons } from "@/api/icons";
+import { filterIconsByCategories, getIcons } from "@/api/icons";
 import { downloadIcon } from "@/api/downloads";
+import { useSearchParams } from "next/navigation";
+import { set } from "date-fns";
 
 // Add this constant at the top of the file
 const HEADER_HEIGHT = 64; // Assuming header height is 64px
@@ -31,27 +33,59 @@ export default function Home() {
   const [hoveredIcon, setHoveredIcon] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const iconsPerPage = 20;
+  const iconsPerPage = 10;
 
   const [icons, setIcons] = useState([]);
+  const category_id = Number(useSearchParams().get("category_id"));
+  console.log("--", category_id);
 
   // fetch the icons from the API :
   useEffect(() => {
-    getIcons(currentPage, iconsPerPage).then((response) => {
-      setIcons(
-        response.data.icons
-          .filter((icon) => icon.status === "PUBLISHED")
-          .map((icon) => ({
-            id: icon.id,
-            className: "fa-shield-cross",
-            tags: icon.icon_tags.map((tag) => tag.tag_name),
-            name: icon.icon_name,
-            svg: icon.icon_content,
-          }))
-      );
-      setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
-    });
+    if (!category_id) {
+      getIcons(currentPage, iconsPerPage).then((response) => {
+        setIcons(
+          response.data.icons
+            .filter((icon) => icon.status === "PUBLISHED")
+            .map((icon) => ({
+              id: icon.id,
+              className: "fa-shield-cross",
+              tags: icon.icon_tags.map((tag) => tag.tag_name),
+              name: icon.icon_name,
+              svg: icon.icon_content,
+            }))
+        );
+        setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
+      });
+    }
   }, [iconsPerPage, currentPage]);
+
+  // fetch filtered icons from the API when the category_id is provided
+  useEffect(() => {
+    if (category_id) {
+      filterIconsByCategories(currentPage, iconsPerPage, [category_id]).then(
+        (response) => {
+          if (!response.error) {
+            setIcons(
+              response.data.icons.map((icon) => ({
+                id: icon.id,
+                className: "fa-shield-cross",
+                tags: icon.icon_tags.map((tag) => tag.tag_name),
+                name: icon.icon_name,
+                svg: icon.icon_content,
+              }))
+            );
+            setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
+          }
+        }
+      );
+    }
+  }, [category_id, iconsPerPage, currentPage]);
+
+  useEffect(() => {
+    if (category_id) {
+      setCurrentPage(1);
+    }
+  }, [category_id]);
 
   // Add search functionality
   const filteredIcons = icons.filter(
@@ -335,7 +369,7 @@ export default function Home() {
                                   width: "100%",
                                   height: "100%",
                                   "& path": {
-                                    fill: "currentColor",
+                                    fill: "white",
                                   },
                                 },
                               }}
@@ -369,9 +403,9 @@ export default function Home() {
                         {/* Quick action buttons */}
                         {hoveredIcon === icon.id && (
                           <Box
-                          onClick={(event)=>{
-                            event.stopPropagation();
-                          }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
                             sx={{
                               position: "absolute",
                               bottom: 0,

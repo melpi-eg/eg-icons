@@ -29,18 +29,18 @@ import { getCategories } from "@/api/categories";
 import { useSelector } from "react-redux";
 import useRole from "@/hooks/useRole";
 import GroupIcon from "@mui/icons-material/Group";
+import { useRouter } from "next/navigation";
 
 const drawerWidth = 240;
 
 export default function Sidebar({ mobileOpen, onDrawerToggle }) {
   const [categories, setCategories] = useState([]);
   const { isAdmin, isSuperAdmin } = useRole();
+  const router = useRouter();
 
   // fetch categories from the API:
   useEffect(() => {
-    getCategories().then((response) =>
-      setCategories(response.data.map((item) => item.category_name))
-    );
+    getCategories().then((response) => setCategories(response.data));
   }, []);
 
   const drawer = (
@@ -56,12 +56,17 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
           <ListItemText primary="Categories" />
         </ListItem>
         {categories.map((item) => (
-          <ListItem key={item} disablePadding sx={{ pl: 2 }}>
+          <ListItem
+            key={item.category_name}
+            disablePadding
+            sx={{ pl: 2 }}
+            onClick={() => router.push(`/home?category_id=${item.id}`)}
+          >
             <ListItemButton>
               <ListItemIcon>
                 <ClassIcon />
               </ListItemIcon>
-              <ListItemText primary={item} />
+              <ListItemText primary={item.category_name} />
             </ListItemButton>
           </ListItem>
         ))}

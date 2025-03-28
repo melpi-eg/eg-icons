@@ -41,29 +41,27 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
 
   console.log("Publishable", icons);
 
-  useEffect(() => {
-    if (!allPublished && Object.keys(publishStatus).length === icons.length) {
-      let allPublishedFlag = true;
-
-      icons.forEach((icon) => {
-        if (
-          publishStatus[icon.id] != "published" &&
-          publishStatus[icon.id] != "scheduled"
-        ) {
-          allPublishedFlag = false;
-        }
-      });
-
-      console.log("All Published", allPublishedFlag);
-
-      setAllPublished(allPublishedFlag);
-    }
-  }, [publishStatus]);
-
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
+
+    icons.filter(
+      (icon) =>
+        publishStatus[icon.id] !== "published" &&
+        publishStatus[icon.id] !== "scheduled"
+    ).length == 0
+      ? setAllPublished(true)
+      : null;
+
     if (checked) {
-      setSelectedIcons(icons.map((icon) => icon.id));
+      setSelectedIcons(
+        icons
+          .filter(
+            (icon) =>
+              publishStatus[icon.id] !== "published" &&
+              publishStatus[icon.id] !== "scheduled"
+          )
+          .map((icon) => icon.id)
+      );
     } else {
       setSelectedIcons([]);
     }
@@ -272,6 +270,7 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
                     selectedIcons.length > 0 &&
                     selectedIcons.length < icons.length
                   }
+                  disabled={allPublished}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               }
@@ -305,7 +304,7 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
             )}
           </Stack>
 
-          {selectedIcons.length > 0 && allPublished && (
+          {selectedIcons.length > 0 && (
             <Button
               variant="contained"
               startIcon={scheduleMode ? <ScheduleIcon /> : <PublishIcon />}
@@ -356,6 +355,10 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
                         checked={selectedIcons.includes(icon.id)}
                         onChange={(e) =>
                           handleIconSelect(icon.id, e.target.checked)
+                        }
+                        disabled={
+                          publishStatus[icon.id] === "published" ||
+                          publishStatus[icon.id] === "scheduled"
                         }
                       />
                       <Typography variant="subtitle1">{icon.name}</Typography>
