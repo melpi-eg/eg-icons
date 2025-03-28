@@ -1,3 +1,3 @@
 import ApiRequest from ".";
 
-export const api = new ApiRequest("http://localhost:8000");
+export const api = new ApiRequest("https://eg-icons-backend-aaad382084ea.herokuapp.com");
