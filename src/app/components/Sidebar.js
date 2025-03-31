@@ -30,17 +30,35 @@ import { useSelector } from "react-redux";
 import useRole from "@/hooks/useRole";
 import GroupIcon from "@mui/icons-material/Group";
 import { useRouter } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { setCategories } from "@/store/reducers/categoriesSlice";
 
 const drawerWidth = 240;
 
 export default function Sidebar({ mobileOpen, onDrawerToggle }) {
-  const [categories, setCategories] = useState([]);
+  const categories = useSelector((state) => state.categories.categories);
   const { isAdmin, isSuperAdmin } = useRole();
   const router = useRouter();
+  const pathname = usePathname();
+  const category_id = Number(useSearchParams().get("category_id"));
+  const dispatch = useDispatch();
 
   // fetch categories from the API:
   useEffect(() => {
-    getCategories().then((response) => setCategories(response.data));
+    getCategories().then((response) => {
+      if (!response.error) {
+        dispatch(
+          setCategories(
+            response.data.map((category) => ({
+              id: category.id,
+              name: category.category_name,
+              count: category._count.icons,
+            }))
+          )
+        ); // Update the Redux store with the fetched categories
+      }
+    });
   }, []);
 
   const drawer = (
@@ -57,16 +75,22 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
         </ListItem>
         {categories.map((item) => (
           <ListItem
-            key={item.category_name}
+            key={item.name}
             disablePadding
-            sx={{ pl: 2 }}
+            sx={{
+              pl: 2,
+              backgroundColor:
+                pathname === "/home" && category_id === item.id
+                  ? "navy"
+                  : "inherit",
+            }}
             onClick={() => router.push(`/home?category_id=${item.id}`)}
           >
             <ListItemButton>
               <ListItemIcon>
                 <ClassIcon />
               </ListItemIcon>
-              <ListItemText primary={item.category_name} />
+              <ListItemText primary={item.name} />
             </ListItemButton>
           </ListItem>
         ))}
@@ -102,7 +126,13 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
         ].map((item) => {
           if (!item.show) return null;
           return (
-            <ListItem key={item.text} disablePadding>
+            <ListItem
+              key={item.text}
+              disablePadding
+              sx={{
+                backgroundColor: pathname === item.path ? "navy" : "inherit",
+              }}
+            >
               <Link
                 href={item.path}
                 style={{

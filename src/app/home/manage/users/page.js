@@ -24,9 +24,12 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import { useTheme } from "@mui/material/styles";
 import { Box } from "@mui/material";
-import { assignRole, getUsers } from "@/api/users";
+import { assignRole, deleteUsers, getUsers } from "@/api/users";
 import useRole from "@/hooks/useRole";
 import FullScreenUnauthorized from "@/app/components/Unauthorized";
+import { Delete as DeleteIcon } from "@mui/icons-material";
+import Snackbar from "@mui/material/Snackbar";
+import { Alert } from "@mui/material";
 
 const fetchUsers = async () => {
   const { data, error } = await getUsers();
@@ -45,8 +48,14 @@ export default function UserManagement() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [search, setSearch] = useState("");
   const [editUser, setEditUser] = useState(null);
+  const [deleteUser, setDeleteUser] = useState(null);
   const [newRole, setNewRole] = useState("");
   const { isSuperAdmin } = useRole();
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
     fetchUsers().then((data) => setUsers(data));
@@ -54,14 +63,43 @@ export default function UserManagement() {
 
   const handleRoleChange = () => {
     if (editUser) {
-      assignRole([editUser.id], newRole);
+      assignRole([editUser.id], newRole).then((response) => {
+        if (!response.error) {
+          setUsers((prevUsers) =>
+            prevUsers.map((user) =>
+              user.id === editUser.id ? { ...user, role: newRole } : user
+            )
+          );
+          setEditUser(null);
+          setSnackbar({
+            open: true,
+            message: "Role updated successfully",
+            severity: "success",
+          });
+        }
+      });
+    }
+  };
 
+  const handleDeleteUser = () => {
+    if (deleteUser) {
+      deleteUsers([deleteUser.id]).then((response) => {
+        if (!response.error) {
+          setUsers((prevUsers) =>
+            prevUsers.filter((user) => user.id !== deleteUser.id)
+          );
+          setDeleteUser(null);
+          setSnackbar({
+            open: true,
+            message: "User deleted successfully",
+            severity: "success",
+          });
+        }
+      });
       setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === editUser.id ? { ...user, role: newRole } : user
-        )
+        prevUsers.filter((user) => user.id !== deleteUser.id)
       );
-      setEditUser(null);
+      setDeleteUser(null);
     }
   };
 
@@ -128,6 +166,13 @@ export default function UserManagement() {
                       >
                         <EditIcon />
                       </IconButton>
+                      <IconButton
+                        onClick={() => {
+                          setDeleteUser(user);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -166,6 +211,51 @@ export default function UserManagement() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Delete User Modal */}
+        <Dialog
+          open={Boolean(deleteUser)}
+          onClose={() => {
+            setDeleteUser(null);
+          }}
+        >
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            <Typography>
+              {`Are you sure you want to delete this user with the username ${deleteUser?.username}?`}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setDeleteUser(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteUser}
+              variant="contained"
+              color="error"
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Paper>
     </Box>
   );

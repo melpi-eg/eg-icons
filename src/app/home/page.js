@@ -22,6 +22,7 @@ import { filterIconsByCategories, getIcons } from "@/api/icons";
 import { downloadIcon } from "@/api/downloads";
 import { useSearchParams } from "next/navigation";
 import { set } from "date-fns";
+import { Snackbar, Alert } from "@mui/material";
 
 // Add this constant at the top of the file
 const HEADER_HEIGHT = 64; // Assuming header height is 64px
@@ -33,11 +34,19 @@ export default function Home() {
   const [hoveredIcon, setHoveredIcon] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [totalIcons, setTotalIcons] = useState(0);
   const iconsPerPage = 10;
 
   const [icons, setIcons] = useState([]);
   const category_id = Number(useSearchParams().get("category_id"));
   console.log("--", category_id);
+  const startValue = (currentPage - 1) * iconsPerPage + 1;
+  const endValue = startValue + icons.length - 1;
 
   // fetch the icons from the API :
   useEffect(() => {
@@ -54,6 +63,7 @@ export default function Home() {
               svg: icon.icon_content,
             }))
         );
+        setTotalIcons(response.data.totalCount);
         setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
       });
     }
@@ -74,6 +84,7 @@ export default function Home() {
                 svg: icon.icon_content,
               }))
             );
+            setTotalIcons(response.data.totalCount);
             setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
           }
         }
@@ -296,8 +307,7 @@ export default function Home() {
                 Array.from(new Array(24)).map((_, index) => (
                   <IconSkeleton key={index} />
                 ))
-              : // Show actual icons
-                filteredIcons.map((icon, index) => (
+              : filteredIcons.map((icon, index) => (
                   <Grid item xs={6} sm={4} md={3} lg={2} key={icon.id}>
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -431,7 +441,13 @@ export default function Home() {
                               onClick={() => {
                                 navigator.clipboard
                                   .writeText(icon.svg)
-                                  .then(() => {});
+                                  .then(() => {
+                                    setSnackbar({
+                                      open: true,
+                                      message: "SVG copied to clipboard",
+                                      severity: "success",
+                                    });
+                                  });
                               }}
                             >
                               <ContentCopyIcon
@@ -468,6 +484,11 @@ export default function Home() {
                     </motion.div>
                   </Grid>
                 ))}
+            {icons.length === 0 && (
+              <Box sx={{ m: "auto", fontSize: "1.5rem" }}>
+                No icons found in the category
+              </Box>
+            )}
           </Grid>
 
           {/* Pagination */}
@@ -513,9 +534,10 @@ export default function Home() {
               align="center"
               sx={{ mt: 2 }}
             >
-              Showing {indexOfFirstIcon + 1}-
+              {/* Showing {indexOfFirstIcon + 1}-
               {Math.min(indexOfLastIcon, filteredIcons.length)} of{" "}
-              {filteredIcons.length} icons
+              {filteredIcons.length} icons Showing{" "} */}
+              {startValue} - {endValue} of {totalIcons} icons
             </Typography>
           )}
         </>
@@ -528,6 +550,20 @@ export default function Home() {
           setIcons={setIcons}
         />
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

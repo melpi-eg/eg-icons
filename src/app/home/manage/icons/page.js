@@ -62,9 +62,9 @@ import {
 import { deleteIcons, getIcons, publishIcons, updateIcon } from "@/api/icons";
 import { createSvgUrlFromCode } from "@/utils";
 import FullScreenUnauthorized from "@/app/components/Unauthorized";
-import Select from "@mui/material/Select";
 import useRole from "@/hooks/useRole";
-import { set } from "date-fns";
+import { useDispatch } from "react-redux";
+import { setCategories as setCategoriesAction } from "@/store/reducers/categoriesSlice";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -119,6 +119,7 @@ export default function ManagePage() {
     id: null,
   });
   const { isAdmin } = useRole();
+  const dispatch = useDispatch();
 
   // fetch the icon types and categories from the API :
   useEffect(() => {
@@ -143,6 +144,15 @@ export default function ManagePage() {
             count: category._count.icons,
           }))
         );
+        dispatch(
+          setCategoriesAction(
+            response.data.map((category) => ({
+              id: category.id,
+              name: category.category_name,
+              count: category._count.icons,
+            }))
+          )
+        ); // Update the Redux store with the fetched categories
       }
     });
   }, []);
@@ -218,8 +228,14 @@ export default function ManagePage() {
           });
           setCategories([
             ...categories,
-            { id: response.data.id, name: newCategory },
+            { id: response.data.id, name: newCategory, count: 0 },
           ]);
+          dispatch(
+            setCategoriesAction([
+              ...categories,
+              { id: response.data.id, name: newCategory, count: 0 },
+            ])
+          );
         }
       });
     } else {
@@ -255,6 +271,7 @@ export default function ManagePage() {
   const handleDeleteItem = (id, type) => {
     if (type === "category") {
       setCategories(categories.filter((cat) => cat.id !== id));
+      dispatch(setCategoriesAction(categories.filter((cat) => cat.id !== id)));
     } else {
       setIconTypes(iconTypes.filter((iconType) => iconType.id !== id));
     }
@@ -277,6 +294,24 @@ export default function ManagePage() {
   const handleSaveEdit = () => {
     // Implementation for saving edits :
     const { icon } = editDialog;
+
+    // Validations for saving edits :
+    if (editedCategory.length === 0) {
+      setSnackbar({
+        open: true,
+        message: "Please select at least one category",
+        severity: "error",
+      });
+      return;
+    }
+    if (editedTags.trim() === "") {
+      setSnackbar({
+        open: true,
+        message: "Please enter at least one tag",
+        severity: "error",
+      });
+      return;
+    }
 
     // Update the icon in the database :
     updateIcon(icon.id, {
@@ -367,7 +402,7 @@ export default function ManagePage() {
       ...prev,
       [filterType]: value,
     }));
-    setPage(0); // Reset to first page when filters change
+    // setPage(0); // Reset to first page when filters change
   };
 
   const handleDeleteClick = (item, type) => {
@@ -607,6 +642,16 @@ export default function ManagePage() {
             cat.id === editCategoryType.id
               ? { ...cat, name: editCategoryType.value }
               : cat
+          )
+        );
+
+        dispatch(
+          setCategoriesAction(
+            categories.map((cat) =>
+              cat.id === editCategoryType.id
+                ? { ...cat, name: editCategoryType.value }
+                : cat
+            )
           )
         );
       } else {

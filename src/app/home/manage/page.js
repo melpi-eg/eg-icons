@@ -124,10 +124,7 @@ export default function DashboardPage() {
               Download Trends
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart
-                data={downloadTrends}
-              
-              >
+              <LineChart data={downloadTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
 
                 <XAxis dataKey="date" dy={10} />
@@ -140,7 +137,17 @@ export default function DashboardPage() {
         </Grid>
 
         {/* Top Downloaded Icons */}
-        <Grid item xs={12} md={4}>
+        <Grid
+          item
+          xs={12}
+          md={4}
+          sx={{
+            maxHeight: "400px",
+            "&::-webkit-scrollbar": {
+              display: "none", // hides the scrollbar
+            },
+            overflowY: "auto",}}
+        >
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Top Downloaded Icons

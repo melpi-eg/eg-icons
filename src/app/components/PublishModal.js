@@ -41,6 +41,16 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
 
   console.log("Publishable", icons);
 
+  const checkAllPublishedOrScheduled = (publishStatus) => {
+    return (
+      icons.filter(
+        (icon) =>
+          publishStatus[icon.id] === "published" ||
+          publishStatus[icon.id] === "scheduled"
+      ).length === icons.length
+    );
+  };
+
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
 
@@ -86,10 +96,11 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
       publishIcons([iconId], "PUBLISHED").then((response) => {
         if (!response.error) {
           setPublishing((prev) => ({ ...prev, [iconId]: false }));
-          setPublishStatus((prev) => ({
-            ...prev,
+          const updatedPublishStatus = {
+            ...publishStatus,
             [iconId]: scheduleMode ? "scheduled" : "published",
-          }));
+          };
+          setPublishStatus(updatedPublishStatus);
 
           setAlert({
             severity: "success",
@@ -97,6 +108,8 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
               scheduleMode ? "scheduled" : "published"
             } successfully`,
           });
+
+          setAllPublished(checkAllPublishedOrScheduled(updatedPublishStatus));
         } else {
           setAlert({
             severity: "error",
@@ -112,10 +125,11 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
       scheduleIcons([iconId], scheduledDate).then((response) => {
         if (!response.error) {
           setPublishing((prev) => ({ ...prev, [iconId]: false }));
-          setPublishStatus((prev) => ({
-            ...prev,
+          const updatedPublishStatus = {
+            ...publishStatus,
             [iconId]: scheduleMode ? "scheduled" : "published",
-          }));
+          };
+          setPublishStatus(updatedPublishStatus);
 
           setAlert({
             severity: "success",
@@ -123,6 +137,8 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
               scheduleMode ? "scheduled" : "published"
             } successfully`,
           });
+
+          setAllPublished(checkAllPublishedOrScheduled(updatedPublishStatus));
         } else {
           setAlert({
             severity: "error",
@@ -174,16 +190,22 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
             message: `Published ${selectedIcons.length} icons successfully`,
           });
 
-          setPublishStatus((prev) => {
-            const newState = { ...prev };
-            selectedIcons.forEach((iconId) => {
-              newState[iconId] = scheduleMode ? "scheduled" : "published";
-            });
-            return newState;
+          const updatedPublishStatus = {
+            ...publishStatus,
+          };
+
+          selectedIcons.forEach((iconId) => {
+            updatedPublishStatus[iconId] = scheduleMode
+              ? "scheduled"
+              : "published";
           });
+
+          setPublishStatus(updatedPublishStatus);
 
           setSelectedIcons([]);
           setSelectAll(false);
+
+          setAllPublished(checkAllPublishedOrScheduled(updatedPublishStatus));
         } else {
           setAlert({
             severity: "error",
@@ -213,13 +235,19 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
             message: `Scheduled ${selectedIcons.length} icons successfully`,
           });
 
-          setPublishStatus((prev) => {
-            const newState = { ...prev };
-            selectedIcons.forEach((iconId) => {
-              newState[iconId] = scheduleMode ? "scheduled" : "published";
-            });
-            return newState;
+          const updatedPublishStatus = {
+            ...publishStatus,
+          };
+
+          selectedIcons.forEach((iconId) => {
+            updatedPublishStatus[iconId] = scheduleMode
+              ? "scheduled"
+              : "published";
           });
+
+          setPublishStatus(updatedPublishStatus);
+
+          setAllPublished(checkAllPublishedOrScheduled(updatedPublishStatus));
 
           setSelectedIcons([]);
           setSelectAll(false);
@@ -280,7 +308,7 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
               {selectedIcons.length} selected
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
-            <FormControlLabel
+            {!allPublished && <FormControlLabel
               control={
                 <Switch
                   checked={scheduleMode}
@@ -288,8 +316,8 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
                 />
               }
               label="Schedule Publish"
-            />
-            {scheduleMode && (
+            />}
+            {scheduleMode && !allPublished && (
               <TextField
                 type="datetime-local"
                 size="small"
@@ -300,6 +328,7 @@ export default function PublishModal({ open, onClose, icons, iconMetadata }) {
                 inputProps={{
                   min: new Date().toISOString().slice(0, 16),
                 }}
+                disabled={allPublished}
               />
             )}
           </Stack>
