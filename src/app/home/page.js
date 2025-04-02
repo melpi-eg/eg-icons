@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import Skeleton from "@mui/material/Skeleton";
 import Pagination from "@mui/material/Pagination";
 import IconModal from "../components/IconModal";
-import { filterIconsByCategories, getIcons } from "@/api/icons";
+import { filterIconsByCategories, filterIconsByTags, getIcons } from "@/api/icons";
 import { downloadIcon } from "@/api/downloads";
 import { useSearchParams } from "next/navigation";
 import { set } from "date-fns";
@@ -44,13 +44,14 @@ export default function Home() {
 
   const [icons, setIcons] = useState([]);
   const category_id = Number(useSearchParams().get("category_id"));
+  const tag_id = Number(useSearchParams().get("tag_id"));
   console.log("--", category_id);
   const startValue = (currentPage - 1) * iconsPerPage + 1;
   const endValue = startValue + icons.length - 1;
 
   // fetch the icons from the API :
   useEffect(() => {
-    if (!category_id) {
+    if (!category_id && !tag_id) {
       getIcons(currentPage, iconsPerPage).then((response) => {
         setIcons(
           response.data.icons
@@ -91,6 +92,29 @@ export default function Home() {
       );
     }
   }, [category_id, iconsPerPage, currentPage]);
+
+   // fetch filtered icons from the API when the tag_id is provided
+   useEffect(() => {
+    if (tag_id) {
+      filterIconsByTags(currentPage, iconsPerPage, [tag_id]).then(
+        (response) => {
+          if (!response.error) {
+            setIcons(
+              response.data.icons.map((icon) => ({
+                id: icon.id,
+                className: "fa-shield-cross",
+                tags: icon.icon_tags.map((tag) => tag.tag_name),
+                name: icon.icon_name,
+                svg: icon.icon_content,
+              }))
+            );
+            setTotalIcons(response.data.totalCount);
+            setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
+          }
+        }
+      );
+    }
+  }, [tag_id, iconsPerPage, currentPage]);
 
   useEffect(() => {
     if (category_id) {

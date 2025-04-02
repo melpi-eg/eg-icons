@@ -165,3 +165,19 @@ export const filterIconsByCategories = async (page_no, limit, categories) => {
     true
   );
 };
+
+/**
+ * Filters the icons based on the given tags
+ * @param {number} page_no the page number to get the icons from
+ * @param {number} limit the number of icons to get
+ * @param {number[]} tags the array of tags to filter by
+ * @returns {Promise<Response>} the response from the API
+ */
+export const filterIconsByTags = async (page_no, limit, tags) => {
+  return await api.post(
+    `/icons/filter/${page_no}?limit=${limit}`,
+    { tags },
+    {},
+    true
+  );
+};

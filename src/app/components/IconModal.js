@@ -24,7 +24,10 @@ import { useTheme } from "@mui/material/styles";
 import { downloadIcon } from "@/api/downloads";
 import { useSelector } from "react-redux";
 import { deleteIcons, publishIcons } from "@/api/icons";
-import { set } from "date-fns";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogActions from "@mui/material/DialogActions";
 
 const modalStyle = {
   position: "absolute",
@@ -84,7 +87,7 @@ export default function IconModal({
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [iconSize, setIconSize] = useState(256);
   const [selectedFormat, setSelectedFormat] = useState("svg");
-  const [strokeWidth, setStrokeWidth] = useState(0.5);
+  const [strokeWidth, setStrokeWidth] = useState(0.1);
   const [currentTab, setCurrentTab] = useState(0);
   const [selectedPngSize, setSelectedPngSize] = useState("256px");
   const [snackbar, setSnackbar] = useState({
@@ -94,6 +97,7 @@ export default function IconModal({
   });
   const [svgString, setSvgString] = useState(selectedIcon.svg);
   const [published, setPublished] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
   isAdmin = user.role === "SUPERADMIN" || user.role === "ADMIN";
 
@@ -210,7 +214,10 @@ export default function IconModal({
         setIcons((icons) => {
           return icons.filter((icon) => icon.id !== selectedIcon.id);
         });
-        onClose();
+        setDeleteModalOpen(false);
+        setTimeout(() => {
+          onClose();
+        }, 1000);
       }
     });
   };
@@ -606,10 +613,11 @@ export default function IconModal({
                 <Slider
                   value={strokeWidth}
                   onChange={handleStrokeChange}
-                  min={0.5}
+                  min={0.1}
                   max={4}
                   step={null}
                   marks={[
+                    { value: 0.1, label: "0.1" },
                     { value: 0.5, label: "0.5" },
                     { value: 1, label: "1" },
                     { value: 2, label: "2" },
@@ -822,7 +830,9 @@ export default function IconModal({
                           bgcolor: "rgba(211, 47, 47, 0.04)",
                         },
                       }}
-                      onClick={handleDelete}
+                      onClick={() => {
+                        setDeleteModalOpen(true);
+                      }}
                     >
                       Delete Icon
                     </Button>
@@ -871,6 +881,37 @@ export default function IconModal({
                 {snackbar.message}
               </Alert>
             </Snackbar>
+
+            {/* Delete User Modal */}
+            <Dialog
+              open={deleteModalOpen}
+              onClose={() => {
+                setDeleteModalOpen(false);
+              }}
+            >
+              <DialogTitle>Confirm Delete</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  {`Are you sure you want to delete this icon ?`}
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  variant="contained"
+                  color="error"
+                >
+                  Delete
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Box>
         </Box>
       </Modal>

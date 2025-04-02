@@ -89,7 +89,14 @@ export default function ManagePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [orderBy, setOrderBy] = useState("name");
   const [order, setOrder] = useState("asc");
-  const [editDialog, setEditDialog] = useState({ open: false, icon: null });
+  const [editDialog, setEditDialog] = useState({
+    open: false,
+    icon: null,
+    error: {
+      category: false,
+      tags: false,
+    },
+  });
   const [editedCategory, setEditedCategory] = useState("");
   const [editedTags, setEditedTags] = useState("");
   const [filters, setFilters] = useState({
@@ -302,16 +309,35 @@ export default function ManagePage() {
         message: "Please select at least one category",
         severity: "error",
       });
+      setEditDialog((prev) => ({
+        ...prev,
+        error: { ...prev.error, category: true },
+      }));
       return;
     }
+
+    setEditDialog((prev) => ({
+      ...prev,
+      error: { ...prev.error, category: false },
+    }));
+
     if (editedTags.trim() === "") {
       setSnackbar({
         open: true,
         message: "Please enter at least one tag",
         severity: "error",
       });
+      setEditDialog((prev) => ({
+        ...prev,
+        error: { ...prev.error, tags: true },
+      }));
       return;
     }
+
+    setEditDialog((prev) => ({
+      ...prev,
+      error: { ...prev.error, tags: false },
+    }));
 
     // Update the icon in the database :
     updateIcon(icon.id, {
@@ -361,28 +387,23 @@ export default function ManagePage() {
   };
 
   const handleTogglePublish = (icon) => {
-    // Implementation for toggling publish status
-    setSnackbar({
-      open: true,
-      message: `Icon ${
-        icon.published ? "unpublished" : "published"
-      } successfully`,
-      severity: "success",
-    });
-
     // Update the icon in the database :
     publishIcons([icon.id], icon.published ? "UNPUBLISHED" : "PUBLISHED").then(
       (response) => {
         if (response.error) {
           setSnackbar({
             open: true,
-            message: "Failed to update icon",
+            message: `Failed to ${
+              icon.published ? "unpublish" : "publish"
+            } icon`,
             severity: "error",
           });
         } else {
           setSnackbar({
             open: true,
-            message: "Icon updated successfully",
+            message: `Icon ${
+              icon.published ? "unpublished" : "published"
+            } successfully`,
             severity: "success",
           });
 
@@ -587,10 +608,20 @@ export default function ManagePage() {
   // Sort function
   const sortedIcons = filteredIcons.sort((a, b) => {
     const isAsc = order === "asc";
+    console.log(order);
+
     if (orderBy === "dateUploaded") {
       return isAsc
         ? new Date(a[orderBy]) - new Date(b[orderBy])
         : new Date(b[orderBy]) - new Date(a[orderBy]);
+    } else if (orderBy === "downloads") {
+      return isAsc ? a[orderBy] - b[orderBy] : b[orderBy] - a[orderBy];
+    } else if (orderBy === "tags") {
+      const aTags = a[orderBy].join(",").toLowerCase();
+      const bTags = b[orderBy].join(",").toLowerCase();
+      console.log(aTags, bTags);
+
+      return isAsc ? aTags.localeCompare(bTags) : bTags.localeCompare(aTags);
     }
     return isAsc
       ? a[orderBy].localeCompare(b[orderBy])
@@ -1127,7 +1158,7 @@ export default function ManagePage() {
             ))}
           </TextField> */}
           <Autocomplete
-            sx={{ mb: 2 }}
+            sx={{}}
             multiple
             id="tags-outlined"
             options={categories}
@@ -1146,6 +1177,11 @@ export default function ManagePage() {
               setEditedCategory(value);
             }}
           />
+          {editDialog.error?.category && (
+            <Typography color="red" variant="caption">
+              Please select at least one category
+            </Typography>
+          )}
 
           <TextField
             margin="dense"
@@ -1153,7 +1189,14 @@ export default function ManagePage() {
             fullWidth
             value={editedTags}
             onChange={(e) => setEditedTags(e.target.value)}
+            sx={{ mt: 2 }}
           />
+
+          {editDialog.error?.tags && (
+            <Typography color="red" variant="caption">
+              Please select at least one tag
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialog({ open: false, icon: null })}>

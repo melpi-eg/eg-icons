@@ -163,6 +163,7 @@ export default function UserManagement() {
                           setEditUser(user);
                           setNewRole(user.role);
                         }}
+                        disabled={user.role === "SUPERADMIN"}
                       >
                         <EditIcon />
                       </IconButton>
@@ -170,6 +171,7 @@ export default function UserManagement() {
                         onClick={() => {
                           setDeleteUser(user);
                         }}
+                        disabled={user.role === "SUPERADMIN"}
                       >
                         <DeleteIcon />
                       </IconButton>

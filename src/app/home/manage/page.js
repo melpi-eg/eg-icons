@@ -146,9 +146,19 @@ export default function DashboardPage() {
             "&::-webkit-scrollbar": {
               display: "none", // hides the scrollbar
             },
-            overflowY: "auto",}}
+            overflowY: "auto",
+          }}
         >
-          <Paper sx={{ p: 2 }}>
+          <Paper
+            sx={{
+              p: 2,
+              maxHeight: "400px",
+              "&::-webkit-scrollbar": {
+                display: "none", // hides the scrollbar
+              },
+              overflowY: "auto",
+            }}
+          >
             <Typography variant="h6" gutterBottom>
               Top Downloaded Icons
             </Typography>
