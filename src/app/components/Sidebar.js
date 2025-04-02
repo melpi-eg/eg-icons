@@ -73,6 +73,25 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
           </ListItemIcon>
           <ListItemText primary="Categories" />
         </ListItem>
+        <ListItem
+          key={-1}
+          disablePadding
+          sx={{
+            pl: 2,
+            backgroundColor:
+              pathname === "/home" && !category_id
+                ? "navy"
+                : "inherit",
+          }}
+          onClick={() => router.push(`/home`)}
+        >
+          <ListItemButton>
+            <ListItemIcon>
+              <ClassIcon />
+            </ListItemIcon>
+            <ListItemText primary={"All"} />
+          </ListItemButton>
+        </ListItem>
         {categories.map((item) => (
           <ListItem
             key={item.name}

@@ -18,11 +18,16 @@ import { motion } from "framer-motion";
 import Skeleton from "@mui/material/Skeleton";
 import Pagination from "@mui/material/Pagination";
 import IconModal from "../components/IconModal";
-import { filterIconsByCategories, filterIconsByTags, getIcons } from "@/api/icons";
+import {
+  filterIconsByCategories,
+  filterIconsByTags,
+  getIcons,
+} from "@/api/icons";
 import { downloadIcon } from "@/api/downloads";
 import { useSearchParams } from "next/navigation";
 import { set } from "date-fns";
 import { Snackbar, Alert } from "@mui/material";
+import { useSelector } from "react-redux";
 
 // Add this constant at the top of the file
 const HEADER_HEIGHT = 64; // Assuming header height is 64px
@@ -48,6 +53,12 @@ export default function Home() {
   console.log("--", category_id);
   const startValue = (currentPage - 1) * iconsPerPage + 1;
   const endValue = startValue + icons.length - 1;
+  const category_name = useSelector(
+    (state) =>
+      state.categories.categories.find(
+        (category) => category.id === category_id
+      )?.name
+  );
 
   // fetch the icons from the API :
   useEffect(() => {
@@ -68,7 +79,7 @@ export default function Home() {
         setPageCount(Math.ceil(response.data.totalCount / iconsPerPage));
       });
     }
-  }, [iconsPerPage, currentPage]);
+  }, [iconsPerPage, currentPage, category_id]);
 
   // fetch filtered icons from the API when the category_id is provided
   useEffect(() => {
@@ -93,8 +104,8 @@ export default function Home() {
     }
   }, [category_id, iconsPerPage, currentPage]);
 
-   // fetch filtered icons from the API when the tag_id is provided
-   useEffect(() => {
+  // fetch filtered icons from the API when the tag_id is provided
+  useEffect(() => {
     if (tag_id) {
       filterIconsByTags(currentPage, iconsPerPage, [tag_id]).then(
         (response) => {
@@ -230,7 +241,7 @@ export default function Home() {
             fontSize: { xs: "2rem", md: "2.5rem" },
           }}
         >
-          Security Icons
+          {category_name ? category_name.charAt(0).toUpperCase() + category_name.slice(1) : "All"} Icons
         </Typography>
 
         <Box
