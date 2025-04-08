@@ -30,6 +30,7 @@ import {
   Alert,
   Snackbar,
   Autocomplete,
+  useTheme,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -60,7 +61,7 @@ import {
   updateCategory,
 } from "@/api/categories";
 import { deleteIcons, getIcons, publishIcons, updateIcon } from "@/api/icons";
-import { createSvgUrlFromCode } from "@/utils";
+import { changeStrokeBasedOnTheme, createSvgUrlFromCode } from "@/utils";
 import FullScreenUnauthorized from "@/app/components/Unauthorized";
 import useRole from "@/hooks/useRole";
 import { useDispatch } from "react-redux";
@@ -127,6 +128,7 @@ export default function ManagePage() {
   });
   const { isAdmin } = useRole();
   const dispatch = useDispatch();
+  const theme = useTheme();
 
   // fetch the icon types and categories from the API :
   useEffect(() => {
@@ -183,7 +185,9 @@ export default function ManagePage() {
             dateUploaded: each.createdAt,
             tags: each.icon_tags.map((tag) => tag.tag_name),
             published: each.status == "PUBLISHED",
-            iconUrl: createSvgUrlFromCode(each.icon_content),
+            // iconUrl: createSvgUrlFromCode(
+            //   changeStrokeBasedOnTheme(each.icon_content, theme)
+            // ),
             downloads: each.downloads,
             icon_svg: each.icon_content,
             categories: each.icon_category,
@@ -910,7 +914,9 @@ export default function ManagePage() {
                         onClick={() => handlePreviewIcon(icon)}
                       >
                         <Image
-                          src={icon.iconUrl}
+                          src={createSvgUrlFromCode(
+                            changeStrokeBasedOnTheme(icon.icon_svg, theme)
+                          )}
                           alt={icon.name}
                           width={40}
                           height={40}

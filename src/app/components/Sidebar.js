@@ -9,6 +9,7 @@ import {
   ListItemText,
   Toolbar,
   Divider,
+  useTheme,
 } from "@mui/material";
 import { useState } from "react";
 import HomeIcon from "@mui/icons-material/Home";
@@ -43,6 +44,11 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
   const pathname = usePathname();
   const category_id = Number(useSearchParams().get("category_id"));
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const linkActiveColor =
+    theme.palette.mode === "dark"
+      ? theme.palette.primary.dark
+      : theme.palette.primary.light; // Define the active link color
 
   // fetch categories from the API:
   useEffect(() => {
@@ -80,7 +86,7 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
             pl: 2,
             backgroundColor:
               pathname === "/home" && !category_id
-                ? "navy"
+                ? linkActiveColor
                 : "inherit",
           }}
           onClick={() => router.push(`/home`)}
@@ -100,8 +106,12 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
               pl: 2,
               backgroundColor:
                 pathname === "/home" && category_id === item.id
-                  ? "navy"
+                  ? linkActiveColor
                   : "inherit",
+              color:
+                pathname === "/home" && category_id === item.id
+                  ? "white"
+                  : theme.palette.text.primary,
             }}
             onClick={() => router.push(`/home?category_id=${item.id}`)}
           >
@@ -149,7 +159,8 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
               key={item.text}
               disablePadding
               sx={{
-                backgroundColor: pathname === item.path ? "navy" : "inherit",
+                backgroundColor:
+                  pathname === item.path ? linkActiveColor : "inherit",
               }}
             >
               <Link
@@ -162,7 +173,10 @@ export default function Sidebar({ mobileOpen, onDrawerToggle }) {
               >
                 <ListItemButton>
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
+                  <ListItemText
+                    primary={item.text}
+                    sx={{ color: pathname === item.path ? "white" : "inherit" }}
+                  />
                 </ListItemButton>
               </Link>
             </ListItem>

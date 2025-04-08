@@ -28,6 +28,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogActions from "@mui/material/DialogActions";
+import { updateSVGString } from "@/utils";
 
 const modalStyle = {
   position: "absolute",
@@ -108,34 +109,58 @@ export default function IconModal({
       `stroke:${iconColor};`
     );
 
+    tempSvg = tempSvg.replace(
+      /(fill:\s*#(?:[0-9a-fA-F]{3}){1,2};)/,
+      `fill: ${iconColor};`
+    );
+
     // Replace stroke width
     tempSvg = tempSvg.replace(
       /stroke-width:\s*[^;]+;/,
       `stroke-width:${strokeWidth};`
     );
 
-    // Update width in the svg tag
-    tempSvg = tempSvg.replace(/width="\d+(\.\d+)?"/, `width="${iconSize}"`);
+    // Check if the width attribute exists and update or add it
+    if (/<svg[^>]*\swidth\s*=\s*"\d+(\.\d+)?"/.test(tempSvg)) {
+      // If width exists, update it
+      tempSvg = tempSvg.replace(
+        /(<svg[^>]*\s)width\s*=\s*"\d+(\.\d+)?"/,
+        `$1width="${iconSize}"`
+      );
+    } else {
+      // If width doesn't exist, add it
+      tempSvg = tempSvg.replace(/<svg([^>]*)>/, `<svg$1 width="${iconSize}">`);
+    }
 
-    // Update height in the svg tag
-    tempSvg = tempSvg.replace(/height="\d+(\.\d+)?"/, `height="${iconSize}"`);
+    // Check if the height attribute exists and update or add it
+    if (/<svg[^>]*\sheight\s*=\s*"\d+(\.\d+)?"/.test(tempSvg)) {
+      // If height exists, update it
+      tempSvg = tempSvg.replace(
+        /(<svg[^>]*\s)height\s*=\s*"\d+(\.\d+)?"/,
+        `$1height="${iconSize}"`
+      );
+    } else {
+      // If height doesn't exist, add it
+      tempSvg = tempSvg.replace(/<svg([^>]*)>/, `<svg$1 height="${iconSize}">`);
+    }
 
     // Regex to match all <path> elements and their 'fill' attributes
     const pathRegex = /<path([^>]*)>/gi;
 
-    tempSvg = tempSvg.replace(pathRegex, (match, pathContent) => {
-      // Remove existing inline styles that set the fill color
-      pathContent = pathContent.replace(/style="fill:[^"]*"/, "");
+    // tempSvg = tempSvg.replace(pathRegex, (match, pathContent) => {
+    //   // Remove existing inline styles that set the fill color
+    //   pathContent = pathContent.replace(/style="fill:[^"]*"/, "");
 
-      // If the path already has a fill attribute, replace it
-      if (pathContent.includes('fill="')) {
-        return match.replace(/fill="[^"]*"/, `fill="${iconColor}"`);
-      }
+    //   // If the path already has a fill attribute, replace it
+    //   if (pathContent.includes('fill="')) {
+    //     return match.replace(/fill="[^"]*"/, `fill="${iconColor}"`);
+    //   }
 
-      // Otherwise, add the fill attribute
-      return match.replace("<path", `<path fill="${iconColor}"`);
-    });
+    //   // Otherwise, add the fill attribute
+    //   return match.replace("<path", `<path fill="${iconColor}"`);
+    // });
 
+    // tempSvg = updateSVGString(tempSvg, strokeWidth);
     setSvgString(tempSvg);
   }, [iconColor, iconSize, strokeWidth]);
 
@@ -364,6 +389,9 @@ export default function IconModal({
                     height: `${iconSize}px`,
                     color: iconColor,
                     transition: "all 0.3s ease",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
                   }}
                 >
                   {/* Icon content */}
@@ -501,7 +529,7 @@ export default function IconModal({
                     <TextField
                       size="small"
                       value={iconColor}
-                      onChange={(e) => handleColorChange(e.target.value)}
+                      onInput={(e) => handleColorChange(e.target.value)}
                       placeholder="#000000"
                       sx={{
                         flex: 1,
@@ -597,7 +625,7 @@ export default function IconModal({
                 />
               </Box>
 
-              {/* Stroke Width */}
+              {/* Stroke Width
               <Typography
                 variant="subtitle2"
                 gutterBottom
@@ -626,7 +654,7 @@ export default function IconModal({
                   ]}
                   valueLabelDisplay="auto"
                 />
-              </Box>
+              </Box> */}
 
               {/* Download Format */}
               <Typography

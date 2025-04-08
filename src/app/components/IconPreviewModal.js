@@ -1,8 +1,11 @@
-import { Modal, Box, Stack, Typography, Chip } from "@mui/material";
+"use client";
+import { Modal, Box, Stack, Typography, Chip, useTheme } from "@mui/material";
 import Image from "next/image";
+import { createSvgUrlFromCode, changeStrokeBasedOnTheme } from "@/utils";
 
 function IconPreviewModal({ open, icon, onClose }) {
   if (!icon) return null;
+  const theme = useTheme();
 
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="icon-preview-modal">
@@ -40,7 +43,9 @@ function IconPreviewModal({ open, icon, onClose }) {
             }}
           >
             <Image
-              src={icon.iconUrl}
+              src={createSvgUrlFromCode(
+                changeStrokeBasedOnTheme(icon.icon_svg, theme)
+              )}
               alt={icon.name}
               fill
               style={{ objectFit: "contain", padding: "32px" }}

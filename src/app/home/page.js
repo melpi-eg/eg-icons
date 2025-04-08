@@ -28,7 +28,8 @@ import { useSearchParams } from "next/navigation";
 import { set } from "date-fns";
 import { Snackbar, Alert } from "@mui/material";
 import { useSelector } from "react-redux";
-
+import { useTheme } from "@mui/material";
+import { changeStrokeBasedOnTheme } from "@/utils";
 // Add this constant at the top of the file
 const HEADER_HEIGHT = 64; // Assuming header height is 64px
 const SIDEBAR_WIDTH = 240; // Sidebar width
@@ -45,6 +46,7 @@ export default function Home() {
     severity: "success",
   });
   const [totalIcons, setTotalIcons] = useState(0);
+  const theme = useTheme();
   const iconsPerPage = 10;
 
   const [icons, setIcons] = useState([]);
@@ -241,7 +243,10 @@ export default function Home() {
             fontSize: { xs: "2rem", md: "2.5rem" },
           }}
         >
-          {category_name ? category_name.charAt(0).toUpperCase() + category_name.slice(1) : "All"} Icons
+          {category_name
+            ? category_name.charAt(0).toUpperCase() + category_name.slice(1)
+            : "All"}{" "}
+          Icons
         </Typography>
 
         <Box
@@ -406,16 +411,16 @@ export default function Home() {
                           {icon.svg ? (
                             <Box
                               component="div"
-                              dangerouslySetInnerHTML={{ __html: icon.svg }}
+                              dangerouslySetInnerHTML={{ __html: changeStrokeBasedOnTheme(icon.svg, theme) }}
                               sx={{
                                 width: "100%",
                                 height: "100%",
                                 "& svg": {
                                   width: "100%",
                                   height: "100%",
-                                  "& path": {
-                                    fill: "white",
-                                  },
+                                  // "& path": {
+                                  //   fill: "white",
+                                  // },
                                 },
                               }}
                             />
@@ -457,8 +462,8 @@ export default function Home() {
                               left: 0,
                               right: 0,
                               p: 1,
-                              background:
-                                "linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0))",
+                              // background:
+                              //   "linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0))",
                               display: "flex",
                               justifyContent: "center",
                               gap: 1,
